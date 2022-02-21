@@ -23,3 +23,5 @@ coverage/
 /badges
 packages/*/*.tgz
 samples/
+.idea/
+.next/
