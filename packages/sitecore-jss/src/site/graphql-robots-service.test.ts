@@ -1,7 +1,11 @@
 import { expect } from 'chai';
 import nock from 'nock';
-import { GraphQLRobotsService, GraphQLRobotsServiceConfig } from './graphql-robots-service';
-import { GraphQLClient, GraphQLRequestClient } from '@sitecore-jss/sitecore-jss/graphql';
+import {
+  GraphQLRobotsService,
+  GraphQLRobotsServiceConfig,
+  siteNameError,
+} from './graphql-robots-service';
+import { GraphQLClient, GraphQLRequestClient } from '../graphql';
 
 class TestService extends GraphQLRobotsService {
   public client: GraphQLClient;
@@ -26,7 +30,7 @@ describe('GraphQLRobotsService', () => {
     nock.cleanAll();
   });
 
-  const mockPathsRequest = (siteName?: string) => {
+  const mockRobotsRequest = (siteName?: string) => {
     nock(endpoint)
       .post('/')
       .reply(
@@ -48,22 +52,23 @@ describe('GraphQLRobotsService', () => {
   };
 
   describe('Fetch robots.txt', () => {
-    it('should work if robots.txt has empty string', async () => {
-      mockPathsRequest();
+    it('should get error if robots.txt has empty sitename', async () => {
+      mockRobotsRequest();
 
       const service = new GraphQLRobotsService({ endpoint, apiKey, siteName: '' });
-      const sitemap = await service.fetchRobots();
-      expect(sitemap).to.equal(undefined);
+      await service.fetchRobots().catch((error: Error) => {
+        expect(error.message).to.equal(siteNameError);
+      });
 
-      return expect(nock.isDone()).to.be.true;
+      return expect(nock.isDone()).to.be.false;
     });
 
-    it('should work get robots.txt', async () => {
-      mockPathsRequest(siteName);
+    it('should get robots.txt', async () => {
+      mockRobotsRequest(siteName);
 
-      const service = new GraphQLRobotsService({ endpoint, apiKey, siteName: '' });
-      const sitemap = await service.fetchRobots();
-      expect(sitemap).to.equal(siteName);
+      const service = new GraphQLRobotsService({ endpoint, apiKey, siteName });
+      const robots = await service.fetchRobots();
+      expect(robots).to.equal(siteName);
 
       return expect(nock.isDone()).to.be.true;
     });
